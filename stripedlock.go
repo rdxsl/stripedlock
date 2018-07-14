@@ -13,7 +13,7 @@ type StripedLock interface {
 
 type stripedLock struct {
 	size  uint32
-	locks []*sync.Mutex
+	locks []sync.Mutex
 }
 
 // NewStripedLock creates an array of locks that are striped by the hash code
@@ -23,17 +23,14 @@ type stripedLock struct {
 func NewStripedLock(size uint32) StripedLock {
 	sl := &stripedLock{
 		size:  size,
-		locks: make([]*sync.Mutex, size),
-	}
-	for i := range sl.locks {
-		sl.locks[i] = &sync.Mutex{}
+		locks: make([]sync.Mutex, size),
 	}
 	return sl
 }
 
 // Get returns the lock associated with a given id based on the id's hash code
 func (sl *stripedLock) Get(id string) sync.Locker {
-	return sl.locks[sl.idToIndex(id)]
+	return &sl.locks[sl.idToIndex(id)]
 }
 
 // Lock acquires the lock associated with a given id based on the id's hash code

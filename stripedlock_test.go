@@ -7,18 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getTestLocksField(size uint32) []*sync.Mutex {
-	locks := make([]*sync.Mutex, size)
-	for i := range locks {
-		locks[i] = &sync.Mutex{}
-	}
+func getTestLocksField(size uint32) []sync.Mutex {
+	locks := make([]sync.Mutex, size)
 	return locks
 }
 
 func Test_stripedLock_idToIndex(t *testing.T) {
 	type fields struct {
 		size  uint32
-		locks []*sync.Mutex
+		locks []sync.Mutex
 	}
 	type args struct {
 		id string
@@ -50,7 +47,7 @@ func Test_stripedLock_idToIndex(t *testing.T) {
 func Test_StripedLockInterface(t *testing.T) {
 	sl, internals := getTestStripedLock(256)
 	lock := sl.Get("dog")
-	assert.Equal(t, lock, internals.locks[8])
+	assert.Equal(t, lock, &internals.locks[8])
 
 	// TODO: think about how to unit test functions with no return val
 	sl.Lock("dog")
@@ -62,10 +59,7 @@ func Test_StripedLockInterface(t *testing.T) {
 func getTestStripedLock(size uint32) (StripedLock, *stripedLock) {
 	sl := &stripedLock{
 		size:  size,
-		locks: make([]*sync.Mutex, size),
-	}
-	for i := range sl.locks {
-		sl.locks[i] = &sync.Mutex{}
+		locks: make([]sync.Mutex, size),
 	}
 	return sl, sl
 }
