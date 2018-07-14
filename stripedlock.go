@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"hash/fnv"
 	"sort"
 	"sync"
@@ -45,11 +46,50 @@ func (sl *stripedLock) Unlock(id string) {
 	sl.locks[sl.idToIndex(id)].Unlock()
 }
 
+// BatchLock will try to acquire locks on a batch of ids.
+// The ids are deduped to avoid hash collisions within the set and the locks are acquired based on
+// the sorted order of ids, so that concurrent batch updates cannot deadlock.
 func (sl *stripedLock) BatchLock(ids []string) {
-	sort.Strings(ids)
-	for _, id := range ids {
-		sl.Lock(id)
+	hashcodes := sl.getHashcodes(ids)
+	for _, hashcode := range hashcodes {
+		sl.locks[hashcode].Lock()
 	}
+}
+
+// BatchUnlock will try to release locks on a batch of ids.
+func (sl *stripedLock) BatchUnlock(ids []string) {
+	hashcodes := sl.getHashcodes(ids)
+	for _, i := range hashcodes {
+		sl.locks[i].Unlock()
+	}
+}
+
+// getHashcodes handles id sorting and de duplication of an hashcodes for a batch of ids
+func (sl *stripedLock) getHashcodes(ids []string) []uint32 {
+
+	// sort the ids so that locks are acquired in a stable order
+	sort.Strings(ids)
+
+	var hashcodes []uint32
+	for _, id := range ids {
+		hashcodes = append(hashcodes, sl.idToIndex(id))
+	}
+
+	// init a map to de dupe the entries
+	hashcodesMap := make(map[uint32]bool)
+	for _, i := range hashcodes {
+		hashcodesMap[i] = true
+	}
+
+	// init new array to return filtered values
+	var ret []uint32
+	for i, _ := range hashcodesMap {
+		ret = append(ret, i)
+	}
+
+	fmt.Println(ret)
+
+	return ret
 }
 
 // idToIndex is an id hashing function

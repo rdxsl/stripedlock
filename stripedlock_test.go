@@ -3,6 +3,7 @@ package main
 import (
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -10,6 +11,24 @@ import (
 func getTestLocksField(size uint32) []sync.Mutex {
 	locks := make([]sync.Mutex, size)
 	return locks
+}
+
+func Test_BatchLockHashCollision(t *testing.T) {
+
+	// Idea behind this test:
+	// a striped lock with size of 1 will always deadlock a batch update of size 2+,
+	// unless hash collision is handled properly
+	sl := NewStripedLock(1)
+	ids := []string{"dog", "cat", "fish"}
+	locked := false
+
+	go func() {
+		sl.BatchLock(ids)
+		locked = true
+	}()
+
+	time.Sleep(100 * time.Millisecond)
+	assert.Equal(t, true, locked)
 }
 
 func Test_stripedLock_idToIndex(t *testing.T) {
