@@ -52,6 +52,13 @@ func Test_StripedLockInterface(t *testing.T) {
 	// TODO: think about how to unit test functions with no return val
 	sl.Lock("dog")
 	sl.Unlock("dog")
+
+	ids := []string{"dog", "cat", "fish"}
+	sl.BatchLock(ids)
+	for _, id := range ids {
+		sl.Unlock(id)
+	}
+
 	// we made it to the end i guess?
 	assert.Equal(t, true, true)
 }

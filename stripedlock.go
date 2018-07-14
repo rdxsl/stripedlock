@@ -2,6 +2,7 @@ package main
 
 import (
 	"hash/fnv"
+	"sort"
 	"sync"
 )
 
@@ -9,6 +10,7 @@ type StripedLock interface {
 	Get(id string) sync.Locker
 	Lock(id string)
 	Unlock(id string)
+	BatchLock(ids []string)
 }
 
 type stripedLock struct {
@@ -41,6 +43,13 @@ func (sl *stripedLock) Lock(id string) {
 // Unlock releases the lock associated with a given id based on the id's hash code
 func (sl *stripedLock) Unlock(id string) {
 	sl.locks[sl.idToIndex(id)].Unlock()
+}
+
+func (sl *stripedLock) BatchLock(ids []string) {
+	sort.Strings(ids)
+	for _, id := range ids {
+		sl.Lock(id)
+	}
 }
 
 // idToIndex is an id hashing function
